@@ -1,0 +1,542 @@
+[
+  {
+    "incident_id": "INC-SEED-1001",
+    "service": "payment-api",
+    "severity": "SEV-1",
+    "timestamp": "2026-08-01T00:00:00+00:00",
+    "description": "payment-api: HTTP 503 spike after v2.7.9 deployed.",
+    "error_message": "Timeout acquiring database connection",
+    "symptoms": [
+      "HTTP 503 spike",
+      "Database connection pool exhausted"
+    ],
+    "logs": "level=ERROR service=payment-api message=\"Timeout acquiring database connection\"",
+    "recent_change": "v2.7.9 deployed",
+    "root_cause": "Checkout exception path left database connections unclosed",
+    "resolution_steps": [
+      "Rolled back v2.7.9",
+      "Performed approved rolling restart",
+      "Verified connections returned to baseline"
+    ],
+    "failed_approaches": [
+      "Increasing pool size only delayed exhaustion"
+    ],
+    "runbook": "Database Connection Exhaustion",
+    "outcome": "Resolved",
+    "resolution_time": 11,
+    "postmortem": "Add exception-path connection-release tests and track checked-out connection age."
+  },
+  {
+    "incident_id": "INC-SEED-1002",
+    "service": "payment-api",
+    "severity": "SEV-1",
+    "timestamp": "2026-08-02T00:00:00+00:00",
+    "description": "payment-api: HTTP 503 errors after v2.8.1 payment tracing enabled.",
+    "error_message": "Timeout acquiring database connection",
+    "symptoms": [
+      "HTTP 503 errors",
+      "Pool at 100 percent"
+    ],
+    "logs": "level=ERROR service=payment-api message=\"Timeout acquiring database connection\"",
+    "recent_change": "v2.8.1 payment tracing enabled",
+    "root_cause": "Tracing wrapper skipped connection close on cancelled requests",
+    "resolution_steps": [
+      "Disabled tracing wrapper",
+      "Rolled the service gradually",
+      "Verified payment success rate"
+    ],
+    "failed_approaches": [
+      "Database failover did not fix the client leak"
+    ],
+    "runbook": "Database Connection Exhaustion",
+    "outcome": "Resolved",
+    "resolution_time": 14,
+    "postmortem": "Test cancellation cleanup and require connection-lifecycle review for wrappers."
+  },
+  {
+    "incident_id": "INC-SEED-1003",
+    "service": "order-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-03T00:00:00+00:00",
+    "description": "order-service: Database pool saturated after batch importer concurrency increased.",
+    "error_message": "Timeout acquiring database connection",
+    "symptoms": [
+      "Database pool saturated",
+      "Checkout queue growing"
+    ],
+    "logs": "level=ERROR service=order-service message=\"Timeout acquiring database connection\"",
+    "recent_change": "Batch importer concurrency increased",
+    "root_cause": "Unbounded importer parallelism consumed the shared database pool",
+    "resolution_steps": [
+      "Paused importer",
+      "Reduced concurrency to five",
+      "Verified checkout latency"
+    ],
+    "failed_approaches": [
+      "Adding API replicas increased database pressure"
+    ],
+    "runbook": "Database Connection Exhaustion",
+    "outcome": "Resolved",
+    "resolution_time": 17,
+    "postmortem": "Separate batch and interactive connection budgets and cap importer concurrency."
+  },
+  {
+    "incident_id": "INC-SEED-1004",
+    "service": "inventory-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-04T00:00:00+00:00",
+    "description": "inventory-service: Cache latency high after bulk cache warm started.",
+    "error_message": "Redis command timed out after 2000ms",
+    "symptoms": [
+      "Cache latency high",
+      "Stock reads timing out"
+    ],
+    "logs": "level=ERROR service=inventory-service message=\"Redis command timed out after 2000ms\"",
+    "recent_change": "Bulk cache warm started",
+    "root_cause": "Cache warm job issued a blocking KEYS scan against production Redis",
+    "resolution_steps": [
+      "Stopped cache warm",
+      "Replaced KEYS with bounded SCAN",
+      "Verified cache latency"
+    ],
+    "failed_approaches": [
+      "Restarting API pods did not remove Redis blocking work"
+    ],
+    "runbook": "Redis Connection Failure",
+    "outcome": "Resolved",
+    "resolution_time": 9,
+    "postmortem": "Ban KEYS in production jobs and monitor Redis slowlog."
+  },
+  {
+    "incident_id": "INC-SEED-1005",
+    "service": "auth-service",
+    "severity": "SEV-1",
+    "timestamp": "2026-08-05T00:00:00+00:00",
+    "description": "auth-service: 401 errors for valid users after signing key rotated.",
+    "error_message": "JWT signature verification failed",
+    "symptoms": [
+      "401 errors for valid users",
+      "New sessions fail"
+    ],
+    "logs": "level=ERROR service=auth-service message=\"JWT signature verification failed\"",
+    "recent_change": "Signing key rotated",
+    "root_cause": "Verifier key cache did not include the newly active signing key",
+    "resolution_steps": [
+      "Published overlapping verifier keys",
+      "Refreshed JWKS caches",
+      "Verified new and old tokens"
+    ],
+    "failed_approaches": [
+      "Clearing user cookies could not fix server key mismatch"
+    ],
+    "runbook": "Authentication Failure",
+    "outcome": "Resolved",
+    "resolution_time": 12,
+    "postmortem": "Use overlapping rotation windows and a canary token validation check."
+  },
+  {
+    "incident_id": "INC-SEED-1006",
+    "service": "notification-service",
+    "severity": "SEV-3",
+    "timestamp": "2026-08-06T00:00:00+00:00",
+    "description": "notification-service: Emails delayed after email provider rate limit reduced.",
+    "error_message": "Consumer lag 180000 messages",
+    "symptoms": [
+      "Emails delayed",
+      "Worker throughput low"
+    ],
+    "logs": "level=ERROR service=notification-service message=\"Consumer lag 180000 messages\"",
+    "recent_change": "Email provider rate limit reduced",
+    "root_cause": "Workers retried throttled requests without backoff",
+    "resolution_steps": [
+      "Added bounded exponential backoff",
+      "Reduced send concurrency",
+      "Drained backlog"
+    ],
+    "failed_approaches": [
+      "Increasing workers worsened provider throttling"
+    ],
+    "runbook": "Kafka Consumer Lag",
+    "outcome": "Resolved",
+    "resolution_time": 36,
+    "postmortem": "Honor Retry-After and alert on lag age rather than only queue size."
+  },
+  {
+    "incident_id": "INC-SEED-1007",
+    "service": "order-service",
+    "severity": "SEV-1",
+    "timestamp": "2026-08-07T00:00:00+00:00",
+    "description": "order-service: HTTP 500 on checkout after application deployed before migration.",
+    "error_message": "Column delivery_slot does not exist",
+    "symptoms": [
+      "HTTP 500 on checkout",
+      "New version only"
+    ],
+    "logs": "level=ERROR service=order-service message=\"Column delivery_slot does not exist\"",
+    "recent_change": "Application deployed before migration",
+    "root_cause": "New application queried a column before the compatible schema migration ran",
+    "resolution_steps": [
+      "Rolled back application",
+      "Applied reviewed additive migration",
+      "Redeployed canary"
+    ],
+    "failed_approaches": [
+      "Restarting instances could not create the missing column"
+    ],
+    "runbook": "Deployment Failure",
+    "outcome": "Resolved",
+    "resolution_time": 19,
+    "postmortem": "Gate application rollout on backward-compatible migration completion."
+  },
+  {
+    "incident_id": "INC-SEED-1008",
+    "service": "payment-api",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-08T00:00:00+00:00",
+    "description": "payment-api: External payments time out after egress policy updated.",
+    "error_message": "TLS handshake timeout to payment gateway",
+    "symptoms": [
+      "External payments time out",
+      "Database connections normal"
+    ],
+    "logs": "level=ERROR service=payment-api message=\"TLS handshake timeout to payment gateway\"",
+    "recent_change": "Egress policy updated",
+    "root_cause": "Egress policy omitted a payment gateway endpoint",
+    "resolution_steps": [
+      "Restored approved egress rule",
+      "Verified TLS from service",
+      "Replayed only idempotent requests"
+    ],
+    "failed_approaches": [
+      "Increasing database pool size had no relevance"
+    ],
+    "runbook": "Network Timeout",
+    "outcome": "Resolved",
+    "resolution_time": 22,
+    "postmortem": "Test each gateway endpoint before activating network policies."
+  },
+  {
+    "incident_id": "INC-SEED-1009",
+    "service": "inventory-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-09T00:00:00+00:00",
+    "description": "inventory-service: CPU 98 percent after sku validation regex changed.",
+    "error_message": "Request processing deadline exceeded",
+    "symptoms": [
+      "CPU 98 percent",
+      "Hot thread in regex matcher"
+    ],
+    "logs": "level=ERROR service=inventory-service message=\"Request processing deadline exceeded\"",
+    "recent_change": "SKU validation regex changed",
+    "root_cause": "Pathological regular expression backtracking on long SKU inputs",
+    "resolution_steps": [
+      "Reverted regex",
+      "Limited input length",
+      "Verified adversarial SKU test"
+    ],
+    "failed_approaches": [
+      "Adding CPU capacity masked but did not remove the pathological input"
+    ],
+    "runbook": "High CPU",
+    "outcome": "Resolved",
+    "resolution_time": 15,
+    "postmortem": "Require bounded validation and worst-case input tests."
+  },
+  {
+    "incident_id": "INC-SEED-1010",
+    "service": "auth-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-10T00:00:00+00:00",
+    "description": "auth-service: RSS grows over hours after session diagnostics enabled.",
+    "error_message": "OOMKilled exit code 137",
+    "symptoms": [
+      "RSS grows over hours",
+      "Repeated pod restarts"
+    ],
+    "logs": "level=ERROR service=auth-service message=\"OOMKilled exit code 137\"",
+    "recent_change": "Session diagnostics enabled",
+    "root_cause": "Diagnostic event buffer had no size bound",
+    "resolution_steps": [
+      "Disabled diagnostic buffer",
+      "Rolled instances",
+      "Verified stable RSS"
+    ],
+    "failed_approaches": [
+      "Raising memory limits extended the interval between crashes"
+    ],
+    "runbook": "Memory Leak",
+    "outcome": "Resolved",
+    "resolution_time": 28,
+    "postmortem": "Bound diagnostic buffers and run a memory soak test."
+  },
+  {
+    "incident_id": "INC-SEED-1011",
+    "service": "notification-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-11T00:00:00+00:00",
+    "description": "notification-service: Heap increases after attachment batch limit raised.",
+    "error_message": "Java heap space",
+    "symptoms": [
+      "Heap increases",
+      "Large attachments backlog"
+    ],
+    "logs": "level=ERROR service=notification-service message=\"Java heap space\"",
+    "recent_change": "Attachment batch limit raised",
+    "root_cause": "Workers loaded entire batches of attachments into heap",
+    "resolution_steps": [
+      "Paused large batches",
+      "Reduced batch size",
+      "Streamed attachment reads"
+    ],
+    "failed_approaches": [
+      "Restart alone caused the same failure on replay"
+    ],
+    "runbook": "Memory Leak",
+    "outcome": "Resolved",
+    "resolution_time": 31,
+    "postmortem": "Apply byte-based batch limits and use streaming uploads."
+  },
+  {
+    "incident_id": "INC-SEED-1012",
+    "service": "order-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-12T00:00:00+00:00",
+    "description": "order-service: 503 at gateway after readiness path changed.",
+    "error_message": "Upstream has no healthy endpoints",
+    "symptoms": [
+      "503 at gateway",
+      "Pods otherwise running"
+    ],
+    "logs": "level=ERROR service=order-service message=\"Upstream has no healthy endpoints\"",
+    "recent_change": "Readiness path changed",
+    "root_cause": "Gateway health check still referenced the retired readiness path",
+    "resolution_steps": [
+      "Restored compatible readiness route",
+      "Updated health check",
+      "Verified endpoints healthy"
+    ],
+    "failed_approaches": [
+      "Scaling pods did not correct the route mismatch"
+    ],
+    "runbook": "API 503 Errors",
+    "outcome": "Resolved",
+    "resolution_time": 7,
+    "postmortem": "Keep health endpoints backward compatible during rollout."
+  },
+  {
+    "incident_id": "INC-SEED-1013",
+    "service": "inventory-service",
+    "severity": "SEV-1",
+    "timestamp": "2026-08-13T00:00:00+00:00",
+    "description": "inventory-service: Consumer lag climbing after bulk stock event enabled.",
+    "error_message": "Rebalance in progress",
+    "symptoms": [
+      "Consumer lag climbing",
+      "Frequent partition reassignments"
+    ],
+    "logs": "level=ERROR service=inventory-service message=\"Rebalance in progress\"",
+    "recent_change": "Bulk stock event enabled",
+    "root_cause": "Processing large batches exceeded max poll interval",
+    "resolution_steps": [
+      "Reduced batch size",
+      "Tuned poll interval within latency budget",
+      "Verified stable assignments"
+    ],
+    "failed_approaches": [
+      "More consumers caused additional rebalance churn"
+    ],
+    "runbook": "Kafka Consumer Lag",
+    "outcome": "Resolved",
+    "resolution_time": 26,
+    "postmortem": "Load-test worst-case batch processing time against poll interval."
+  },
+  {
+    "incident_id": "INC-SEED-1014",
+    "service": "auth-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-14T00:00:00+00:00",
+    "description": "auth-service: Login session reads fail after redis credentials rotated.",
+    "error_message": "NOAUTH Authentication required",
+    "symptoms": [
+      "Login session reads fail",
+      "Redis reachable"
+    ],
+    "logs": "level=ERROR service=auth-service message=\"NOAUTH Authentication required\"",
+    "recent_change": "Redis credentials rotated",
+    "root_cause": "Application secret mount still referenced the previous credential version",
+    "resolution_steps": [
+      "Updated secret reference",
+      "Performed controlled rolling restart",
+      "Verified session reads"
+    ],
+    "failed_approaches": [
+      "Redis restart did not update client credentials"
+    ],
+    "runbook": "Redis Connection Failure",
+    "outcome": "Resolved",
+    "resolution_time": 13,
+    "postmortem": "Validate secret propagation in a canary before credential rotation."
+  },
+  {
+    "incident_id": "INC-SEED-1015",
+    "service": "payment-api",
+    "severity": "SEV-1",
+    "timestamp": "2026-08-15T00:00:00+00:00",
+    "description": "payment-api: 503 errors after settlement reconciliation query changed.",
+    "error_message": "Timeout acquiring database connection",
+    "symptoms": [
+      "503 errors",
+      "Database lock waits rising"
+    ],
+    "logs": "level=ERROR service=payment-api message=\"Timeout acquiring database connection\"",
+    "recent_change": "Settlement reconciliation query changed",
+    "root_cause": "Long-running settlement transaction blocked checkout writes and held connections",
+    "resolution_steps": [
+      "Cancelled reviewed blocking transaction",
+      "Disabled new reconciliation query",
+      "Verified lock wait recovery"
+    ],
+    "failed_approaches": [
+      "Rolling API alone did not release the database blocker"
+    ],
+    "runbook": "Database Connection Exhaustion",
+    "outcome": "Resolved",
+    "resolution_time": 18,
+    "postmortem": "Set statement timeouts and test settlement queries with checkout load."
+  },
+  {
+    "incident_id": "INC-SEED-1016",
+    "service": "notification-service",
+    "severity": "SEV-3",
+    "timestamp": "2026-08-16T00:00:00+00:00",
+    "description": "notification-service: New workers pending after release tag was not published.",
+    "error_message": "ImagePullBackOff",
+    "symptoms": [
+      "New workers pending",
+      "Old workers still send"
+    ],
+    "logs": "level=ERROR service=notification-service message=\"ImagePullBackOff\"",
+    "recent_change": "Release tag was not published",
+    "root_cause": "Deployment referenced a missing immutable image tag",
+    "resolution_steps": [
+      "Restored previous image digest",
+      "Published release image",
+      "Verified one worker rollout"
+    ],
+    "failed_approaches": [
+      "Repeated rollout retries could not fetch an absent image"
+    ],
+    "runbook": "Deployment Failure",
+    "outcome": "Resolved",
+    "resolution_time": 10,
+    "postmortem": "Verify image digest exists before deploying workers."
+  },
+  {
+    "incident_id": "INC-SEED-1017",
+    "service": "order-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-17T00:00:00+00:00",
+    "description": "order-service: Request latency high after verbose response field enabled.",
+    "error_message": "CPU throttling above 80 percent",
+    "symptoms": [
+      "Request latency high",
+      "CPU-heavy serialization"
+    ],
+    "logs": "level=ERROR service=order-service message=\"CPU throttling above 80 percent\"",
+    "recent_change": "Verbose response field enabled",
+    "root_cause": "Repeated serialization of a large product payload exhausted CPU budget",
+    "resolution_steps": [
+      "Disabled verbose field",
+      "Cached immutable serialization",
+      "Verified latency under load"
+    ],
+    "failed_approaches": [
+      "Raising request timeout increased backlog"
+    ],
+    "runbook": "High CPU",
+    "outcome": "Resolved",
+    "resolution_time": 23,
+    "postmortem": "Benchmark serialization cost for new response fields."
+  },
+  {
+    "incident_id": "INC-SEED-1018",
+    "service": "inventory-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-18T00:00:00+00:00",
+    "description": "inventory-service: Intermittent dependency failures after resolver configuration rolled out.",
+    "error_message": "DNS resolution timed out",
+    "symptoms": [
+      "Intermittent dependency failures",
+      "DNS retries high"
+    ],
+    "logs": "level=ERROR service=inventory-service message=\"DNS resolution timed out\"",
+    "recent_change": "Resolver configuration rolled out",
+    "root_cause": "Resolver search suffix configuration generated excessive DNS queries",
+    "resolution_steps": [
+      "Reverted resolver settings",
+      "Flushed affected caches",
+      "Verified DNS request rate"
+    ],
+    "failed_approaches": [
+      "Restarting downstream database did not affect DNS"
+    ],
+    "runbook": "Network Timeout",
+    "outcome": "Resolved",
+    "resolution_time": 16,
+    "postmortem": "Canary DNS configuration and measure query amplification."
+  },
+  {
+    "incident_id": "INC-SEED-1019",
+    "service": "auth-service",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-19T00:00:00+00:00",
+    "description": "auth-service: External login 503 after identity provider maintenance.",
+    "error_message": "Identity provider unavailable",
+    "symptoms": [
+      "External login 503",
+      "Local sessions remain valid"
+    ],
+    "logs": "level=ERROR service=auth-service message=\"Identity provider unavailable\"",
+    "recent_change": "Identity provider maintenance",
+    "root_cause": "Upstream identity provider outage exceeded retry budget",
+    "resolution_steps": [
+      "Enabled approved maintenance response",
+      "Limited retry fanout",
+      "Monitored provider recovery"
+    ],
+    "failed_approaches": [
+      "Unlimited retries amplified request load"
+    ],
+    "runbook": "API 503 Errors",
+    "outcome": "Mitigated",
+    "resolution_time": 20,
+    "postmortem": "Use bounded retries and communicate external login degradation; full recovery was not confirmed."
+  },
+  {
+    "incident_id": "INC-SEED-1020",
+    "service": "payment-api",
+    "severity": "SEV-2",
+    "timestamp": "2026-08-20T00:00:00+00:00",
+    "description": "payment-api: Intermittent gateway timeouts after no application deployment.",
+    "error_message": "Gateway request deadline exceeded",
+    "symptoms": [
+      "Intermittent gateway timeouts",
+      "No local saturation"
+    ],
+    "logs": "level=ERROR service=payment-api message=\"Gateway request deadline exceeded\"",
+    "recent_change": "No application deployment",
+    "root_cause": "Confirmed packet loss on upstream transit path; provider repair pending",
+    "resolution_steps": [
+      "Captured packet-loss evidence",
+      "Opened provider incident",
+      "Kept idempotency checks enabled"
+    ],
+    "failed_approaches": [
+      "Increasing application timeout did not eliminate packet loss"
+    ],
+    "runbook": "Network Timeout",
+    "outcome": "Unresolved",
+    "resolution_time": 40,
+    "postmortem": "Do not blindly retry non-idempotent payment operations; provider follow-up remains open."
+  }
+]

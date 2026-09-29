@@ -1,0 +1,5 @@
+streamlit==1.64.0
+pydantic==2.13.5
+python-dotenv==1.2.3
+openai==3.20.0
+hindsight-client==0.10.2

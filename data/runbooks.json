@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Database Connection Exhaustion",
+    "steps": [
+      "Inspect pool occupancy, database locks and transaction age.",
+      "Correlate saturation with changes; distinguish client leak from server blocking.",
+      "Review failed historical attempts before choosing an approved rollback or targeted cancellation.",
+      "Verify pool recovery, latency and payment success before declaring resolution."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  },
+  {
+    "name": "API 503 Errors",
+    "steps": [
+      "Identify whether 503 originates at gateway or application.",
+      "Inspect healthy endpoints and dependency status.",
+      "Apply reviewed route, health-check or dependency mitigation.",
+      "Verify error rate and customer request success."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  },
+  {
+    "name": "High CPU",
+    "steps": [
+      "Inspect hot threads and throttling.",
+      "Compare workload and recent code changes.",
+      "Mitigate the proven hot path with rollback or bounded work.",
+      "Verify latency and CPU under representative traffic."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  },
+  {
+    "name": "Memory Leak",
+    "steps": [
+      "Compare heap or RSS trend with request load.",
+      "Inspect buffer growth or heap profiles.",
+      "Bound allocations and use reviewed rolling restart only as mitigation.",
+      "Verify a stable memory trend over time."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  },
+  {
+    "name": "Redis Connection Failure",
+    "steps": [
+      "Separate authentication, network and slow-command causes.",
+      "Check secret version, Redis latency and slowlog without exposing credentials.",
+      "Apply the cause-specific approved change.",
+      "Verify session or stock reads and latency."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  },
+  {
+    "name": "Deployment Failure",
+    "steps": [
+      "Compare failing release with last healthy version.",
+      "Inspect image, migration and rollout events.",
+      "Select compatible rollback or reviewed forward fix.",
+      "Verify canary before resuming rollout."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  },
+  {
+    "name": "Kafka Consumer Lag",
+    "steps": [
+      "Inspect lag age, rebalance events and downstream throttling.",
+      "Compare processing time with poll interval and rate limits.",
+      "Tune bounded concurrency or batch size for the identified cause.",
+      "Verify backlog drains without duplicate side effects."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  },
+  {
+    "name": "Authentication Failure",
+    "steps": [
+      "Check failure codes without logging tokens.",
+      "Validate issuer, audience, clock and current public keys.",
+      "Repair verified key distribution or configuration mismatch.",
+      "Verify canary tokens before broad rollout."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  },
+  {
+    "name": "Network Timeout",
+    "steps": [
+      "Separate DNS, TLS, network loss and remote saturation.",
+      "Inspect approved network policy and provider status.",
+      "Use bounded retries only with idempotency protection.",
+      "Verify end-to-end requests before closure."
+    ],
+    "note": "Synthetic reference. Relevance and recorded effectiveness must come from recalled incident outcomes."
+  }
+]
